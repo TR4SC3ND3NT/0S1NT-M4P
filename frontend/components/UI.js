@@ -1,76 +1,108 @@
+import MapNode from './MapNode.js';
+import LinkLine from './LinkLine.js';
+
 export default class UI {
-  constructor(app) {
-    this.app = app;
-    this.container = document.getElementById('ui-container');
-    this.renderMenu();
+  constructor(api, network, nodesDataSet, edgesDataSet) {
+    this.api = api;
+    this.network = network;
+    this.nodesDataSet = nodesDataSet;
+    this.edgesDataSet = edgesDataSet;
+    this.loginForm = document.getElementById('login-form');
+    this.loginEmail = document.getElementById('login-email');
+    this.loginPassword = document.getElementById('login-password');
+    this.registerForm = document.getElementById('register-form');
+    this.registerEmail = document.getElementById('register-email');
+    this.registerPassword = document.getElementById('register-password');
+    this.entityForm = document.getElementById('entity-form');
+    this.entityType = document.getElementById('entity-type');
+    this.entityName = document.getElementById('entity-name');
+    this.entityDescription = document.getElementById('entity-description');
+    this.statusText = document.getElementById('status-text');
   }
 
-  renderMenu() {
-    const logo = document.createElement('img');
-    logo.src = './assets/logo.png';
-    logo.className = 'logo';
-    this.container.appendChild(logo);
-
-    const panel = document.createElement('div');
-    panel.className = 'panel';
-
-    const title = document.createElement('div');
-    title.className = 'panel-title';
-    title.textContent = 'Add Location';
-
-    const titleInput = document.createElement('input');
-    titleInput.type = 'text';
-    titleInput.placeholder = 'Location title';
-
-    const latInput = document.createElement('input');
-    latInput.type = 'number';
-    latInput.placeholder = 'Latitude';
-    latInput.step = 'any';
-
-    const lonInput = document.createElement('input');
-    lonInput.type = 'number';
-    lonInput.placeholder = 'Longitude';
-    lonInput.step = 'any';
-
-    const descInput = document.createElement('textarea');
-    descInput.placeholder = 'Description';
-
-    const addBtn = document.createElement('button');
-    addBtn.textContent = 'Add Location';
-    addBtn.addEventListener('click', () => this.app.api.createLocation({
-      title: titleInput.value,
-      latitude: parseFloat(latInput.value),
-      longitude: parseFloat(lonInput.value),
-      description: descInput.value,
-    }).then(() => {
-      titleInput.value = '';
-      latInput.value = '';
-      lonInput.value = '';
-      descInput.value = '';
-    }));
-
-    panel.appendChild(title);
-    panel.appendChild(titleInput);
-    panel.appendChild(latInput);
-    panel.appendChild(lonInput);
-    panel.appendChild(descInput);
-    panel.appendChild(addBtn);
-
-    this.container.appendChild(panel);
+  setStatus(message) {
+    this.statusText.textContent = message;
   }
 
-  showNodeDetails(node) {
-    const details = this.container.querySelector('.node-details') || document.createElement('div');
-    details.className = 'panel node-details';
-    details.innerHTML = `
-      <div class="panel-title">${node.label}</div>
-      <p>ID: ${node.id}</p>
-      <p>X: ${node.x.toFixed(2)}</p>
-      <p>Y: ${node.y.toFixed(2)}</p>
-    `;
-    
-    if (!this.container.querySelector('.node-details')) {
-      this.container.appendChild(details);
+  bindAuth() {
+    this.loginForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        this.setStatus('Logging in...');
+        await this.api.login(this.loginEmail.value, this.loginPassword.value);
+        this.setStatus('Logged in');
+        await this.loadData();
+      } catch (err) {
+        this.setStatus('Login failed');
+      }
+    });
+
+    this.registerForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        this.setStatus('Registering...');
+        await this.api.register(this.registerEmail.value, this.registerPassword.value);
+        this.setStatus('Registered and logged in');
+        await this.loadData();
+      } catch (err) {
+        this.setStatus('Register failed');
+      }
+    });
+  }
+
+  bindEntityForm() {
+    this.entityForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        const type = this.entityType.value;
+        const name = this.entityName.value.trim();
+        const description = this.entityDescription.value.trim();
+        if (!name) {
+          this.setStatus('Name required');
+          return;
+        }
+        this.setStatus('Creating entity...');
+        const entity = await this.api.createEntity(type, name, description);
+        this.addEntityToGraph(entity);
+        this.entityName.value = '';
+        this.entityDescription.value = '';
+        this.setStatus('Entity created');
+      } catch (err) {
+        this.setStatus('Failed to create entity');
+      }
+    });
+  }
+
+  addEntityToGraph(entity) {
+    const node = new MapNode(entity).toVisNode();
+    this.nodesDataSet.add(node);
+  }
+
+  addLinkToGraph(link) {
+    const edge = new LinkLine(link).toVisEdge();
+    this.edgesDataSet.add(edge);
+  }
+
+  async loadData() {
+    try {
+      const entities = await this.api.getEntities();
+      const links = await this.api.getLinks();
+      this.nodesDataSet.clear();
+      this.edgesDataSet.clear();
+      entities.forEach(e => this.addEntityToGraph(e));
+      links.forEach(l => this.addLinkToGraph(l));
+      this.setStatus('Graph updated');
+    } catch (err) {
+      this.setStatus('Failed to load data');
+    }
+  }
+
+  async init() {
+    this.api.loadTokenFromStorage();
+    this.bindAuth();
+    this.bindEntityForm();
+    if (this.api.token) {
+      await this.loadData();
     }
   }
 }

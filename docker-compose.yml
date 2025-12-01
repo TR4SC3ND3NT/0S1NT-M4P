@@ -1,41 +1,38 @@
-version: '3.8'
+version: "3.9"
 
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: osint_user
+      POSTGRES_PASSWORD: osint_password
+      POSTGRES_DB: osint_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    ports:
-      - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - SECRET_KEY=${SECRET_KEY}
-    volumes:
-      - ./backend:/app/backend
+      DATABASE_URL: postgresql://osint_user:osint_password@db:5432/osint_db?schema=public
     depends_on:
       - db
+    ports:
+      - "4000:4000"
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+    depends_on:
+      - backend
     ports:
-      - "3000:3000"
-    environment:
-      - REACT_APP_API_URL=${REACT_APP_API_URL}
-    volumes:
-      - ./frontend:/app/frontend
-
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "8080:80"
 
 volumes:
-  postgres_data:
+  db-data:

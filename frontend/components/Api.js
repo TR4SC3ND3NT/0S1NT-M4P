@@ -1,68 +1,106 @@
 export default class Api {
-  constructor() {
-    this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-    this.token = localStorage.getItem('token');
+  constructor(baseUrl) {
+    this.baseUrl = baseUrl;
+    this.token = null;
   }
 
-  async request(endpoint, options = {}) {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
+  setToken(token) {
+    this.token = token;
+    if (token) {
+      localStorage.setItem('osint_map_token', token);
+    } else {
+      localStorage.removeItem('osint_map_token');
+    }
+  }
 
-    if (this.token) {
+  loadTokenFromStorage() {
+    const token = localStorage.getItem('osint_map_token');
+    if (token) {
+      this.token = token;
+    }
+  }
+
+  getHeaders(auth) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (auth && this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
+    return headers;
+  }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers,
+  async register(email, password) {
+    const res = await fetch(`${this.baseUrl}/auth/register`, {
+      method: 'POST',
+      headers: this.getHeaders(false),
+      body: JSON.stringify({ email, password })
     });
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+    if (!res.ok) {
+      throw new Error('Register failed');
     }
-
-    return response.json();
+    const data = await res.json();
+    if (data.token) {
+      this.setToken(data.token);
+    }
+    return data;
   }
 
-  getLocations() {
-    return this.request('/locations');
-  }
-
-  createLocation(data) {
-    return this.request('/locations', {
+  async login(email, password) {
+    const res = await fetch(`${this.baseUrl}/auth/login`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      headers: this.getHeaders(false),
+      body: JSON.stringify({ email, password })
     });
+    if (!res.ok) {
+      throw new Error('Login failed');
+    }
+    const data = await res.json();
+    if (data.token) {
+      this.setToken(data.token);
+    }
+    return data;
   }
 
-  createMarker(data) {
-    return this.request('/markers', {
-      method: 'POST',
-      body: JSON.stringify(data),
+  async getEntities() {
+    const res = await fetch(`${this.baseUrl}/entities`, {
+      headers: this.getHeaders(true)
     });
+    if (!res.ok) {
+      throw new Error('Failed to load entities');
+    }
+    return res.json();
   }
 
-  login(email, password) {
-    return this.request('/auth/login', {
+  async createEntity(type, name, description) {
+    const res = await fetch(`${this.baseUrl}/entities`, {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
-    }).then(res => {
-      this.token = res.token;
-      localStorage.setItem('token', res.token);
-      return res;
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ type, name, description })
     });
+    if (!res.ok) {
+      throw new Error('Failed to create entity');
+    }
+    return res.json();
   }
 
-  register(email, name, password) {
-    return this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, name, password }),
-    }).then(res => {
-      this.token = res.token;
-      localStorage.setItem('token', res.token);
-      return res;
+  async getLinks() {
+    const res = await fetch(`${this.baseUrl}/links`, {
+      headers: this.getHeaders(true)
     });
+    if (!res.ok) {
+      throw new Error('Failed to load links');
+    }
+    return res.json();
+  }
+
+  async createLink(fromId, toId, type) {
+    const res = await fetch(`${this.baseUrl}/links`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ fromId, toId, type })
+    });
+    if (!res.ok) {
+      throw new Error('Failed to create link');
+    }
+    return res.json();
   }
 }

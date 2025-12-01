@@ -1,16 +1,17 @@
 export default class LinkLine {
-  constructor(fromId, toId, type = 'related') {
-    this.fromId = fromId;
-    this.toId = toId;
-    this.type = type;
-    this.strength = 1;
+  constructor(link) {
+    this.id = link.id;
+    this.fromId = link.fromId;
+    this.toId = link.toId;
+    this.type = link.type;
   }
 
-  setStrength(value) {
-    this.strength = Math.max(0, Math.min(1, value));
-  }
-
-  getStrength() {
-    return this.strength;
+  toVisEdge() {
+    return {
+      id: this.id,
+      from: this.fromId,
+      to: this.toId,
+      label: this.type
+    };
   }
 }

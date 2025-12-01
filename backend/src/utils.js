@@ -1,29 +1,21 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
-const hashPassword = async (password) => {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(password, salt);
-};
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
 
-const comparePassword = async (password, hash) => {
+export async function hashPassword(password) {
+  return bcrypt.hash(password, 10);
+}
+
+export async function comparePassword(password, hash) {
   return bcrypt.compare(password, hash);
-};
+}
 
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET || 'secret_key', {
-    expiresIn: '7d',
-  });
-};
+export function createAccessToken(user) {
+  return jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+}
 
-const verifyToken = (token) => {
-  const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
-  return decoded.userId;
-};
-
-module.exports = {
-  hashPassword,
-  comparePassword,
-  generateToken,
-  verifyToken,
-};
+export function createResetToken() {
+  return crypto.randomBytes(32).toString('hex');
+}

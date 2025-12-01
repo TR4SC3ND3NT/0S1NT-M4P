@@ -1,16 +1,23 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-const routes = require('./src/routes');
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import routes from './src/routes.js';
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
 
-app.use(cors());
+app.use(cors({ origin: '*', credentials: false }));
 app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.json({ name: '0S1NT-M4P API' });
+});
 
 app.use('/api', routes);
 
+const PORT = process.env.PORT || 4000;
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`0S1NT-M4P backend listening on port ${PORT}`);
 });

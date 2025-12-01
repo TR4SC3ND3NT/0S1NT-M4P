@@ -1,97 +1,68 @@
-import MapNode from './components/MapNode.js';
-import LinkLine from './components/LinkLine.js';
-import UI from './components/UI.js';
 import Api from './components/Api.js';
+import UI from './components/UI.js';
 
-class App {
-  constructor() {
-    this.nodes = [];
-    this.links = [];
-    this.selectedNode = null;
-    this.api = new Api();
-    this.ui = new UI(this);
-    this.initSVG();
-    this.loadData();
-  }
+const nodes = new vis.DataSet([]);
+const edges = new vis.DataSet([]);
 
-  initSVG() {
-    const container = document.getElementById('map-container');
-    this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.svg.setAttribute('width', container.clientWidth);
-    this.svg.setAttribute('height', container.clientHeight);
-    container.appendChild(this.svg);
+const container = document.getElementById('graph');
 
-    this.linksGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    this.nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    this.svg.appendChild(this.linksGroup);
-    this.svg.appendChild(this.nodesGroup);
-  }
+const data = {
+  nodes,
+  edges
+};
 
-  async loadData() {
-    try {
-      const locations = await this.api.getLocations();
-      locations.forEach(loc => this.addNode(loc));
-    } catch (error) {
-      console.error('Failed to load data:', error);
+const options = {
+  autoResize: true,
+  nodes: {
+    shape: 'dot',
+    size: 16,
+    font: {
+      color: '#e5e7eb',
+      size: 14
+    },
+    borderWidth: 1
+  },
+  edges: {
+    width: 1,
+    length: 200,
+    smooth: {
+      type: 'continuous'
+    },
+    font: {
+      size: 10,
+      color: '#9ca3af',
+      align: 'horizontal'
     }
-  }
-
-  addNode(data) {
-    const node = new MapNode(data.id, data.title, data.latitude, data.longitude);
-    this.nodes.push(node);
-    this.renderNode(node);
-  }
-
-  renderNode(node) {
-    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    group.setAttribute('class', 'node');
-    group.setAttribute('data-id', node.id);
-
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', node.x);
-    circle.setAttribute('cy', node.y);
-    circle.setAttribute('r', '5');
-
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', node.x + 10);
-    text.setAttribute('y', node.y + 5);
-    text.textContent = node.label;
-
-    group.appendChild(circle);
-    group.appendChild(text);
-    group.addEventListener('click', () => this.selectNode(node));
-
-    this.nodesGroup.appendChild(group);
-  }
-
-  selectNode(node) {
-    this.selectedNode = node;
-    this.ui.showNodeDetails(node);
-  }
-
-  addLink(fromId, toId) {
-    const link = new LinkLine(fromId, toId);
-    this.links.push(link);
-    this.renderLink(link);
-  }
-
-  renderLink(link) {
-    const fromNode = this.nodes.find(n => n.id === link.fromId);
-    const toNode = this.nodes.find(n => n.id === link.toId);
-
-    if (fromNode && toNode) {
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('class', 'link');
-      line.setAttribute('x1', fromNode.x);
-      line.setAttribute('y1', fromNode.y);
-      line.setAttribute('x2', toNode.x);
-      line.setAttribute('y2', toNode.y);
-
-      this.linksGroup.appendChild(line);
+  },
+  groups: {
+    PERSON: {
+      color: { background: '#22c55e', border: '#15803d' }
+    },
+    LOCATION: {
+      color: { background: '#3b82f6', border: '#1d4ed8' }
+    },
+    DOMAIN: {
+      color: { background: '#a855f7', border: '#7e22ce' }
     }
+  },
+  physics: {
+    enabled: true,
+    stabilization: {
+      iterations: 150
+    }
+  },
+  interaction: {
+    hover: true,
+    tooltipDelay: 120
   }
-}
+};
 
-document.addEventListener('DOMContentLoaded', () => {
-  new App();
-});
+const network = new vis.Network(container, data, options);
+
+const apiBase = 'http://localhost:4000/api';
+
+const api = new Api(apiBase);
+
+const ui = new UI(api, network, nodes, edges);
+
+ui.init();

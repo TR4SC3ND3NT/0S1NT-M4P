@@ -1,22 +1,15 @@
 export default class MapNode {
-  constructor(id, label, x, y) {
-    this.id = id;
-    this.label = label;
-    this.x = x || Math.random() * 800;
-    this.y = y || Math.random() * 600;
-    this.data = {};
+  constructor(entity) {
+    this.id = entity.id;
+    this.label = entity.name;
+    this.group = entity.type;
   }
 
-  setData(key, value) {
-    this.data[key] = value;
-  }
-
-  getData(key) {
-    return this.data[key];
-  }
-
-  updatePosition(x, y) {
-    this.x = x;
-    this.y = y;
+  toVisNode() {
+    return {
+      id: this.id,
+      label: this.label,
+      group: this.group
+    };
   }
 }

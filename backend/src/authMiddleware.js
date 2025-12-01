@@ -1,26 +1,22 @@
-const { verifyToken } = require('./utils');
-const models = require('./models');
+import jwt from 'jsonwebtoken';
 
-const authMiddleware = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-    
-    const userId = verifyToken(token);
-    const user = await models.user.findById(userId);
-    
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-    
-    req.user = user;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
+
+export default function authMiddleware(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
-};
-
-module.exports = { authMiddleware };
+  const parts = header.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const token = parts[1];
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = { id: payload.id, email: payload.email };
+    next();
+  } catch (e) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}

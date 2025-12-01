@@ -1,61 +1,45 @@
-# OSINT Map Tracker
+0S1NT-M4P
 
-Open Source Intelligence Map Tracker - A full-stack application for tracking and visualizing intelligence data.
+0S1NT-M4P is a minimal OSINT investigation web app with graph visualization similar in concept to Maltego or Osinttracker.
+Stack: Node.js, Express, Prisma, PostgreSQL, Vanilla JS, vis.js, Docker.
 
-## Project Structure
+Structure
 
-```
-.
-├── backend/          # Python backend (FastAPI)
-├── frontend/         # React frontend
-├── docker-compose.yml
-├── Dockerfile.backend
-├── Dockerfile.frontend
-├── .env.example
-└── README.md
-```
+- backend: Node.js API with JWT auth and Prisma
+- frontend: Static HTML/CSS/JS UI with vis.js graph
+- postgres: Database container
+- docker-compose: Orchestrates all services
 
-## Getting Started
+Requirements
 
-### Prerequisites
-- Docker & Docker Compose
-- Node.js 18+ (for local frontend development)
-- Python 3.11+ (for local backend development)
+- Docker
+- Docker Compose
 
-### Installation
+Setup
 
-1. Copy `.env.example` to `.env` and update values:
-   ```bash
-   cp .env.example .env
-   ```
+1. Copy environment file:
 
-2. Start with Docker Compose:
-   ```bash
-   docker-compose up -d
-   ```
+    cp .env.example .env
 
-### Access
+2. Start the stack:
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- Database: localhost:5432
+    docker compose up --build
 
-## Development
+Services
 
-### Backend
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
+- Frontend: http://localhost:8080
+- Backend API: http://localhost:4000/api
+- PostgreSQL: localhost:5432
 
-### Frontend
-```bash
-cd frontend
-npm install
-npm start
-```
+Usage
 
-## License
+1. Open http://localhost:8080 in a browser.
+2. Use the Register form to create a new user.
+3. Login with the same credentials.
+4. Use the "New Entity" form to create entities of type Person, Location or Domain.
+5. New entities appear on the graph in real time.
 
-MIT
+Notes
+
+- Password reset endpoint logs reset token to backend console.
+- JWT tokens are stored in localStorage and attached to API requests.
